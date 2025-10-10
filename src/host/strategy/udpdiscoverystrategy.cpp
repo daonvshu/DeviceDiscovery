@@ -15,12 +15,12 @@ namespace DeviceDiscovery {
         broadcastAddress = address;
     }
 
-    void UdpDiscoveryStrategy::bindPort(int listenPort, int broadcastPort) {
-        this->broadcastPort = broadcastPort;
+    void UdpDiscoveryStrategy::bindPort(int broadcastPort) {
+        udpBroadcastPort = broadcastPort;
     }
 
     void UdpDiscoveryStrategy::notify() {
-        if (broadcastPort == -1) {
+        if (udpBroadcastPort == -1) {
             return;
         }
         auto physicalInterfaces = InterfaceTools::getPhysicalInterfaces();
@@ -75,7 +75,7 @@ namespace DeviceDiscovery {
         for (const auto& it : sockets) {
             for (const auto& socket : it) {
                 auto data = QJsonDocument(request.dumpToJson()).toJson(QJsonDocument::Compact);
-                socket->writeDatagram(data, broadcastAddress, broadcastPort);
+                socket->writeDatagram(data, broadcastAddress, udpBroadcastPort);
             }
         }
     }
@@ -84,7 +84,7 @@ namespace DeviceDiscovery {
         QList<SocketData> data;
         while (socket->hasPendingDatagrams()) {
             QByteArray datagram;
-            datagram.resize(socket->pendingDatagramSize());
+            datagram.resize(static_cast<int>(socket->pendingDatagramSize()));
             QHostAddress sender;
             quint16 senderPort;
             socket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);

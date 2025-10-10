@@ -64,7 +64,7 @@ namespace DeviceDiscovery {
         }
 
         UdpMulticastStrategyBuilder& listenOn(int port) {
-            strategy->bindPort(port, 0);
+            strategy->bindPort(port);
             return *this;
         }
 

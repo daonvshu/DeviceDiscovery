@@ -13,13 +13,12 @@ namespace DeviceDiscovery {
         broadcastAddress = address;
     }
 
-    void UdpBroadCastStrategy::bindPort(int listenPort, int broadcastPort) {
-        this->listenPort = listenPort;
-        this->broadcastPort = broadcastPort;
+    void UdpBroadCastStrategy::bindPort(int listenPort) {
+        udpListenPort = listenPort;
     }
 
     bool UdpBroadCastStrategy::isAvailable() {
-        if (listenPort == -1 || broadcastPort == -1) {
+        if (udpListenPort == -1) {
             return false;
         }
 
@@ -86,12 +85,9 @@ namespace DeviceDiscovery {
         if (acceptableInterfaces.isEmpty()) {
             return true;
         }
-        for (const auto& regex : acceptableInterfaces) {
-            if (regex.match(name).hasMatch()) {
-                return true;
-            }
-        }
-        return false;
+        return std::any_of(acceptableInterfaces.begin(), acceptableInterfaces.end(), [&] (const QRegularExpression& regex) {
+            return regex.match(name).hasMatch();
+        });
     }
 
     QList<DeviceNetworkEntry> UdpBroadCastStrategy::createNetworkEntry(const QNetworkInterface& networkInterface) {
@@ -114,12 +110,12 @@ namespace DeviceDiscovery {
         QList<SocketData> data;
         while (socket->hasPendingDatagrams()) {
             QByteArray datagram;
-            datagram.resize(socket->pendingDatagramSize());
+            datagram.resize(static_cast<int>(socket->pendingDatagramSize()));
             QHostAddress sender;
             quint16 senderPort;
             socket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
             data << SocketData{ sender, senderPort, datagram };
-            qInfo() << "Received data from " << sender.toString() << ":" << senderPort;
+            //qInfo() << "Received data from " << sender.toString() << ":" << senderPort;
         }
         return data;
     }

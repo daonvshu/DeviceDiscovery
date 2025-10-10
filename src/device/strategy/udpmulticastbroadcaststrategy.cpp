@@ -21,8 +21,8 @@ namespace DeviceDiscovery {
     }
 
     void UdpMulticastBroadCastStrategy::bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface) {
-        qInfo() << "Try bind socket" << "port:" << listenPort << "networkInterface:" << networkInterface.name();
-        if (socket->bind(QHostAddress::AnyIPv4, listenPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+        qInfo() << "Try bind socket" << "port:" << udpListenPort << "networkInterface:" << networkInterface.name();
+        if (socket->bind(QHostAddress::AnyIPv4, udpListenPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
             socket->setMulticastInterface(networkInterface);
             if (!socket->joinMulticastGroup(broadcastAddress, networkInterface)) {
                 qWarning() << "Failed to join multicast group, address:" << broadcastAddress << "networkInterface:" << networkInterface.name();
@@ -58,8 +58,8 @@ namespace DeviceDiscovery {
         }
         record.nonce = request.nonce();
         record.ts = QDateTime::currentMSecsSinceEpoch();
-        if (signKey.isEmpty()) {
-            record.sig = hmac(signKey.toLatin1(), record.getSigStr().toLatin1(), QCryptographicHash::Sha3_256);
+        if (!signKey.isEmpty()) {
+            record.sig = hmac(signKey.toLatin1(), record.getSigStr().toLatin1(), QCryptographicHash::Sha3_256).toBase64();
         }
         auto feedback = QJsonDocument(record.dumpToJson()).toJson();
         QNetworkDatagram datagram;

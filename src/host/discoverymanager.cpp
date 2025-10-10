@@ -7,7 +7,7 @@ namespace DeviceDiscovery {
         QList<IDiscoveryStrategy*> strategies;
         std::function<void(const QList<DeviceRecord>&)> callback;
         QHash<QString, DeviceRecord> records;
-        QTimer timoutTimer;
+        QTimer timeoutTimer;
     };
 
 
@@ -16,19 +16,20 @@ namespace DeviceDiscovery {
     }
 
     void DiscoveryManager::startScan(int scanTimeMs, const std::function<void(const QList<DeviceRecord>&)>& callback) {
+        instance().data->records.clear();
         instance().data->callback = callback;
-        instance().data->timoutTimer.start(scanTimeMs);
+        instance().data->timeoutTimer.start(scanTimeMs);
         instance().sendNotify();
     }
 
     void DiscoveryManager::cancel() {
-        instance().data->timoutTimer.stop();
+        instance().data->timeoutTimer.stop();
     }
 
     DiscoveryManager::DiscoveryManager() {
         data.reset(new DiscoveryManagerData);
-        data->timoutTimer.setSingleShot(true);
-        connect(&data->timoutTimer, &QTimer::timeout, this, [this] {
+        data->timeoutTimer.setSingleShot(true);
+        connect(&data->timeoutTimer, &QTimer::timeout, this, [this] {
             for (auto strategy : data->strategies) {
                 disconnect(strategy, &IDiscoveryStrategy::deviceFound, this, &DiscoveryManager::deviceFound);
             }

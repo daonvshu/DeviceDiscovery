@@ -16,15 +16,14 @@ namespace DeviceDiscovery {
 
         void addInterfaceCheck(const QRegularExpression& regex);
         void setBroadcastAddress(const QHostAddress& address);
-        void bindPort(int listenPort, int broadcastPort);
+        void bindPort(int listenPort);
 
         bool isAvailable() override;
 
     protected:
         QList<QRegularExpression> acceptableInterfaces;
         QHostAddress broadcastAddress;
-        int listenPort = -1;
-        int broadcastPort = -1;
+        int udpListenPort = -1;
 
         QHash<int, QNetworkInterface> cachedInterface;
         QHash<int, QList<QUdpSocket*>> sockets;

@@ -1,5 +1,7 @@
 #include "udpmulticastdiscoverystrategy.h"
 
+#include "hmac.h"
+
 namespace DeviceDiscovery {
     UdpMulticastDiscoveryStrategy::UdpMulticastDiscoveryStrategy(QObject* parent)
         : UdpDiscoveryStrategy(parent) {
@@ -26,6 +28,14 @@ namespace DeviceDiscovery {
             }
             DeviceRecord record;
             record.fromJson(document.object());
+
+            if (!signKey.isEmpty()) {
+                auto curSig = hmac(signKey.toLatin1(), record.getSigStr().toLatin1(), QCryptographicHash::Sha3_256);
+                if (curSig.toBase64() != record.sig()) {
+                    qInfo() << "Invalid signature, record:" << record.deviceName();
+                    continue;
+                }
+            }
             emit deviceFound(record);
         }
     }

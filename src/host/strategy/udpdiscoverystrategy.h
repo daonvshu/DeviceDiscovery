@@ -12,13 +12,13 @@ namespace DeviceDiscovery {
         explicit UdpDiscoveryStrategy(QObject* parent = nullptr);
 
         void setBroadcastAddress(const QHostAddress& address);
-        void bindPort(int listenPort, int broadcastPort);
+        void bindPort(int broadcastPort);
 
         void notify() override;
 
     protected:
         QHostAddress broadcastAddress;
-        int broadcastPort = -1;
+        int udpBroadcastPort = -1;
 
         QHash<int, QNetworkInterface> cachedInterface;
         QHash<int, QList<QUdpSocket*>> sockets;
