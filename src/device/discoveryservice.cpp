@@ -13,6 +13,12 @@ namespace DeviceDiscovery {
         instance().timer->stop();
     }
 
+    void DiscoveryService::reset() {
+        for (const auto& strategy : instance().strategies) {
+            strategy->reset();
+        }
+    }
+
     DiscoveryService::DiscoveryService() {
         timer = new QTimer(this);
         timer->setInterval(3000);

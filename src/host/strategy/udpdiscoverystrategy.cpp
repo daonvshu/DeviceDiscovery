@@ -70,7 +70,7 @@ namespace DeviceDiscovery {
 
         DiscoveryRequest request;
         request.requestType = "network";
-        request.nonce = generateNonce();
+        request.nonce = generateNonce().toHex();
         request.ts = QDateTime::currentMSecsSinceEpoch();
         for (const auto& it : sockets) {
             for (const auto& socket : it) {

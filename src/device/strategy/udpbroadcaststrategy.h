@@ -19,6 +19,7 @@ namespace DeviceDiscovery {
         void bindPort(int listenPort);
 
         bool isAvailable() override;
+        void reset() override;
 
     protected:
         QList<QRegularExpression> acceptableInterfaces;

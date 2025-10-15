@@ -9,6 +9,7 @@ namespace DeviceDiscovery {
         virtual bool isAvailable() = 0;
         virtual void broadcast() = 0;
         virtual QString name() const = 0;
+        virtual void reset() = 0;
 
     protected:
         QString deviceId;

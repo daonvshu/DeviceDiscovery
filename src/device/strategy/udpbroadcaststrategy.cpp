@@ -67,6 +67,14 @@ namespace DeviceDiscovery {
         return !cachedInterface.isEmpty();
     }
 
+    void UdpBroadCastStrategy::reset() {
+        for (auto& it : sockets) {
+            qDeleteAll(it);
+        }
+        sockets.clear();
+        cachedInterface.clear();
+    }
+
     QHash<int, QNetworkInterface> UdpBroadCastStrategy::enumValidNetworkEntries() const {
         QHash<int, QNetworkInterface> entries;
         auto interfaces = QNetworkInterface::allInterfaces();

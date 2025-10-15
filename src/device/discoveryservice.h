@@ -11,6 +11,7 @@ namespace DeviceDiscovery {
         static void addStrategy(IBroadcastStrategy* strategy);
         static void start();
         static void stop();
+        static void reset();
 
     private:
         explicit DiscoveryService();

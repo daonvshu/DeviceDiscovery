@@ -24,6 +24,7 @@ namespace DeviceDiscovery {
         qInfo() << "Try bind socket" << "port:" << udpListenPort << "networkInterface:" << networkInterface.name();
         if (socket->bind(QHostAddress::AnyIPv4, udpListenPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
             socket->setMulticastInterface(networkInterface);
+            socket->leaveMulticastGroup(broadcastAddress, networkInterface);
             if (!socket->joinMulticastGroup(broadcastAddress, networkInterface)) {
                 qWarning() << "Failed to join multicast group, address:" << broadcastAddress << "networkInterface:" << networkInterface.name();
             }
