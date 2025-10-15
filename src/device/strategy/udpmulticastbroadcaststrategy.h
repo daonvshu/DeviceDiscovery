@@ -9,12 +9,15 @@ namespace DeviceDiscovery {
     public:
         explicit UdpMulticastBroadCastStrategy(QObject* parent = nullptr);
 
+        void setBroadcastAddress(const QHostAddress& address);
         void broadcast() override;
         QString name() const override;
 
     protected:
         void bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface) override;
-        void solveSocketData(QUdpSocket* socket, const QList<SocketData>& data, const QNetworkInterface& networkInterface) override;
+
+    private:
+        QHostAddress broadcastAddress;
     };
 
     class UdpMulticastStrategyBuilder {
@@ -30,11 +33,6 @@ namespace DeviceDiscovery {
 
         UdpMulticastStrategyBuilder& deviceName(const QString& name) {
             strategy->deviceName = name;
-            return *this;
-        }
-
-        UdpMulticastStrategyBuilder& key(const QString& key) {
-            strategy->signKey = key;
             return *this;
         }
 

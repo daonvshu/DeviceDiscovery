@@ -9,6 +9,7 @@ namespace DeviceDiscovery {
     class DiscoveryService : public QObject {
     public:
         static void addStrategy(IBroadcastStrategy* strategy);
+        static void setStrategiesKey(const QString& key);
         static void start();
         static void stop();
         static void reset();

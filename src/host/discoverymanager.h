@@ -12,6 +12,7 @@ namespace DeviceDiscovery {
     class DiscoveryManager : public QObject {
     public:
         static void addStrategy(IDiscoveryStrategy* strategy);
+        static void setStrategiesKey(const QString& key);
         static void startScan(int scanTimeMs, const std::function<void(const QList<DeviceRecord>&)>& callback);
         static void cancel();
 

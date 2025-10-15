@@ -1,42 +1,34 @@
 #include "udpmulticastdiscoverystrategy.h"
 
 #include "hmac.h"
+#include "discoveryrequest.h"
 
 namespace DeviceDiscovery {
     UdpMulticastDiscoveryStrategy::UdpMulticastDiscoveryStrategy(QObject* parent)
-        : UdpDiscoveryStrategy(parent) {
+        : UdpBroadcastDiscoveryStrategy(parent) {
+    }
+
+    void UdpMulticastDiscoveryStrategy::setBroadcastAddress(const QHostAddress& address) {
+        broadcastAddress = address;
     }
 
     void UdpMulticastDiscoveryStrategy::bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface) {
-        qInfo() << "Try bind socket, networkInterface:" << networkInterface.name();
+        qInfo() << "Try bind multicast socket, networkInterface:" << networkInterface.name();
         if (socket->bind(QHostAddress::AnyIPv4, 0, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
             socket->setMulticastInterface(networkInterface);
             if (!socket->joinMulticastGroup(broadcastAddress, networkInterface)) {
                 qWarning() << "Failed to join multicast group, address:" << broadcastAddress << "networkInterface:" << networkInterface.name();
             }
         } else {
-            qWarning() << "Failed to bind socket!";
+            qWarning() << "Failed to bind multicast socket!";
         }
     }
 
-    void UdpMulticastDiscoveryStrategy::solveSocketData(QUdpSocket* socket, const QList<SocketData>& data, const QNetworkInterface& networkInterface) {
-        for (const auto& socketData : data) {
-            qInfo() << "Receive from:" << socketData.from << "port:" << socketData.port;
-            auto document = QJsonDocument::fromJson(socketData.data);
-            if (document.isNull() || !document.isObject()) {
-                continue;
+    void UdpMulticastDiscoveryStrategy::sendRequest(const QByteArray& request) {
+        for (const auto& it : sockets) {
+            for (const auto& socket : it) {
+                socket->writeDatagram(request, broadcastAddress, udpBroadcastPort);
             }
-            DeviceRecord record;
-            record.fromJson(document.object());
-
-            if (!signKey.isEmpty()) {
-                auto curSig = hmac(signKey.toLatin1(), record.getSigStr().toLatin1(), QCryptographicHash::Sha3_256);
-                if (curSig.toBase64() != record.sig()) {
-                    qInfo() << "Invalid signature, record:" << record.deviceName();
-                    continue;
-                }
-            }
-            emit deviceFound(record);
         }
     }
 }

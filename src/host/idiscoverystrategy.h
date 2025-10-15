@@ -22,6 +22,6 @@ namespace DeviceDiscovery {
     protected:
         QString signKey;
 
-        friend class UdpMulticastStrategyBuilder;
+        friend class DiscoveryManager;
     };
 }

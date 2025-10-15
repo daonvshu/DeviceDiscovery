@@ -15,6 +15,12 @@ namespace DeviceDiscovery {
         instance().data->strategies << strategy;
     }
 
+    void DiscoveryManager::setStrategiesKey(const QString& key) {
+        for (auto strategy : instance().data->strategies) {
+            strategy->signKey = key;
+        }
+    }
+
     void DiscoveryManager::startScan(int scanTimeMs, const std::function<void(const QList<DeviceRecord>&)>& callback) {
         instance().data->records.clear();
         instance().data->callback = callback;
@@ -33,7 +39,17 @@ namespace DeviceDiscovery {
             for (auto strategy : data->strategies) {
                 disconnect(strategy, &IDiscoveryStrategy::deviceFound, this, &DiscoveryManager::deviceFound);
             }
-            data->callback(data->records.values());
+            auto records = data->records.values();
+            QSet<QString> existIps;
+            for (int i = records.size() - 1; i >= 0; --i) {
+                auto targetIp = records[i].feedbackEntry().ip();
+                if (existIps.contains(targetIp)) {
+                    records.removeAt(i);
+                } else {
+                    existIps.insert(targetIp);
+                }
+            }
+            data->callback(records);
         });
     }
 

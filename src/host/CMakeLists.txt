@@ -20,8 +20,8 @@ add_library(${PROJECT_NAME} STATIC
     interfacetools.h
     interfacetools.cpp
 
-    strategy/udpdiscoverystrategy.h
-    strategy/udpdiscoverystrategy.cpp
+    strategy/udpbroadcastdiscoverystrategy.h
+    strategy/udpbroadcastdiscoverystrategy.cpp
     strategy/udpmulticastdiscoverystrategy.h
     strategy/udpmulticastdiscoverystrategy.cpp
 

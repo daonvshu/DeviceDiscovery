@@ -1,4 +1,4 @@
-#include "udpdiscoverystrategy.h"
+#include "udpbroadcastdiscoverystrategy.h"
 
 #include "../interfacetools.h"
 
@@ -6,20 +6,16 @@
 #include <hmac.h>
 
 namespace DeviceDiscovery {
-    UdpDiscoveryStrategy::UdpDiscoveryStrategy(QObject* parent)
+    UdpBroadcastDiscoveryStrategy::UdpBroadcastDiscoveryStrategy(QObject* parent)
         : IDiscoveryStrategy(parent)
     {
     }
 
-    void UdpDiscoveryStrategy::setBroadcastAddress(const QHostAddress& address) {
-        broadcastAddress = address;
-    }
-
-    void UdpDiscoveryStrategy::bindPort(int broadcastPort) {
+    void UdpBroadcastDiscoveryStrategy::bindPort(int broadcastPort) {
         udpBroadcastPort = broadcastPort;
     }
 
-    void UdpDiscoveryStrategy::notify() {
+    void UdpBroadcastDiscoveryStrategy::notify() {
         if (udpBroadcastPort == -1) {
             return;
         }
@@ -72,15 +68,55 @@ namespace DeviceDiscovery {
         request.requestType = "network";
         request.nonce = generateNonce().toHex();
         request.ts = QDateTime::currentMSecsSinceEpoch();
-        for (const auto& it : sockets) {
-            for (const auto& socket : it) {
-                auto data = QJsonDocument(request.dumpToJson()).toJson(QJsonDocument::Compact);
-                socket->writeDatagram(data, broadcastAddress, udpBroadcastPort);
+        auto data = QJsonDocument(request.dumpToJson()).toJson(QJsonDocument::Compact);
+        sendRequest(data);
+    }
+
+    void UdpBroadcastDiscoveryStrategy::bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface) {
+        qInfo() << "Try bind broadcast socket, networkInterface:" << networkInterface.name();
+        if (!socket->bind(QHostAddress::AnyIPv4, 0, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+            qWarning() << "Failed to bind broadcast socket!";
+        }
+
+        auto entries = networkInterface.addressEntries();
+        for (const auto& entry : entries) {
+            if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol) {
+                socket->setProperty("broadcastAddr", entry.broadcast().toIPv4Address());
             }
         }
     }
 
-    QList<UdpDiscoveryStrategy::SocketData> UdpDiscoveryStrategy::receiveDataFromSocket(QUdpSocket* socket) {
+    void UdpBroadcastDiscoveryStrategy::solveSocketData(QUdpSocket* socket, const QList<SocketData>& data, const QNetworkInterface& networkInterface) {
+        for (const auto& socketData : data) {
+            qInfo() << "Receive from:" << socketData.from << "port:" << socketData.port;
+            auto document = QJsonDocument::fromJson(socketData.data);
+            if (document.isNull() || !document.isObject()) {
+                continue;
+            }
+            DeviceRecord record;
+            record.fromJson(document.object());
+
+            if (!signKey.isEmpty()) {
+                auto curSig = hmac(signKey.toLatin1(), record.getSigStr().toLatin1(), QCryptographicHash::Sha3_256);
+                if (curSig.toBase64() != record.sig()) {
+                    qInfo() << "Invalid signature, record:" << record.deviceName();
+                    continue;
+                }
+            }
+            emit deviceFound(record);
+        }
+    }
+
+    void UdpBroadcastDiscoveryStrategy::sendRequest(const QByteArray& request) {
+        for (const auto& it : sockets) {
+            for (const auto& socket : it) {
+                auto broadcastAddress = socket->property("broadcastAddr").toUInt();
+                socket->writeDatagram(request, QHostAddress(broadcastAddress), udpBroadcastPort);
+            }
+        }
+    }
+
+    QList<UdpBroadcastDiscoveryStrategy::SocketData> UdpBroadcastDiscoveryStrategy::receiveDataFromSocket(QUdpSocket* socket) {
         QList<SocketData> data;
         while (socket->hasPendingDatagrams()) {
             QByteArray datagram;

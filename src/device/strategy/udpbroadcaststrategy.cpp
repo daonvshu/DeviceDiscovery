@@ -1,5 +1,10 @@
 #include "udpbroadcaststrategy.h"
 
+#include "discoveryrequest.h"
+#include "hmac.h"
+
+#include <qnetworkdatagram.h>
+
 namespace DeviceDiscovery {
     UdpBroadCastStrategy::UdpBroadCastStrategy(QObject* parent)
         : QObject(parent) {
@@ -7,10 +12,6 @@ namespace DeviceDiscovery {
 
     void UdpBroadCastStrategy::addInterfaceCheck(const QRegularExpression& regex) {
         acceptableInterfaces << regex;
-    }
-
-    void UdpBroadCastStrategy::setBroadcastAddress(const QHostAddress& address) {
-        broadcastAddress = address;
     }
 
     void UdpBroadCastStrategy::bindPort(int listenPort) {
@@ -75,6 +76,13 @@ namespace DeviceDiscovery {
         cachedInterface.clear();
     }
 
+    void UdpBroadCastStrategy::broadcast() {
+    }
+
+    QString UdpBroadCastStrategy::name() const {
+        return "udp broadcast";
+    }
+
     QHash<int, QNetworkInterface> UdpBroadCastStrategy::enumValidNetworkEntries() const {
         QHash<int, QNetworkInterface> entries;
         auto interfaces = QNetworkInterface::allInterfaces();
@@ -112,6 +120,50 @@ namespace DeviceDiscovery {
             }
         }
         return entries;
+    }
+
+    void UdpBroadCastStrategy::bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface) {
+        qInfo() << "Try bind broadcast socket" << "port:" << udpListenPort << "networkInterface:" << networkInterface.name();
+        if (!socket->bind(QHostAddress::AnyIPv4, udpListenPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+            qWarning() << "Failed to bind broadcast socket!";
+        }
+    }
+
+    void UdpBroadCastStrategy::solveSocketData(QUdpSocket* socket, const QList<SocketData>& data, const QNetworkInterface& networkInterface) {
+        if (data.isEmpty()) {
+            return;
+        }
+
+        auto document = QJsonDocument::fromJson(data.first().data);
+        if (document.isNull() || !document.isObject()) {
+            return;
+        }
+        DiscoveryRequest request;
+        request.fromJson(document.object());
+
+        if (request.requestType() != "network") {
+            return;
+        }
+
+        DeviceRecord record;
+        record.deviceId = deviceId;
+        record.deviceName = deviceName;
+        auto curEntries = createNetworkEntry(networkInterface);
+        record.feedbackEntry = curEntries.isEmpty() ? DeviceNetworkEntry() : curEntries.first();
+        for (const auto& it : cachedInterface) {
+            record.entries().append(createNetworkEntry(it));
+        }
+        record.nonce = request.nonce();
+        record.ts = QDateTime::currentMSecsSinceEpoch();
+        if (!signKey.isEmpty()) {
+            record.sig = hmac(signKey.toLatin1(), record.getSigStr().toLatin1(), QCryptographicHash::Sha3_256).toBase64();
+        }
+        auto feedback = QJsonDocument(record.dumpToJson()).toJson();
+        QNetworkDatagram datagram;
+        datagram.setDestination(data.first().from, data.first().port);
+        datagram.setData(feedback);
+        datagram.setInterfaceIndex(networkInterface.index());
+        socket->writeDatagram(datagram);
     }
 
     QList<UdpBroadCastStrategy::SocketData> UdpBroadCastStrategy::receiveDataFromSocket(QUdpSocket* socket) {

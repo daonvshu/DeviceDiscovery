@@ -16,6 +16,8 @@ namespace DeviceDiscovery {
         QString deviceName;
         QString signKey;
 
+        friend class DiscoveryService;
+        friend class UdpBroadCastStrategyBuilder;
         friend class UdpMulticastStrategyBuilder;
     };
 }

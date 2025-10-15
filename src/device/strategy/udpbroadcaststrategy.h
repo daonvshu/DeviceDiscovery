@@ -15,15 +15,15 @@ namespace DeviceDiscovery {
         explicit UdpBroadCastStrategy(QObject* parent = nullptr);
 
         void addInterfaceCheck(const QRegularExpression& regex);
-        void setBroadcastAddress(const QHostAddress& address);
         void bindPort(int listenPort);
 
         bool isAvailable() override;
         void reset() override;
+        void broadcast() override;
+        QString name() const override;
 
     protected:
         QList<QRegularExpression> acceptableInterfaces;
-        QHostAddress broadcastAddress;
         int udpListenPort = -1;
 
         QHash<int, QNetworkInterface> cachedInterface;
@@ -41,10 +41,59 @@ namespace DeviceDiscovery {
         static QList<DeviceNetworkEntry> createNetworkEntry(const QNetworkInterface& networkInterface);
 
     protected:
-        virtual void bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface) = 0;
-        virtual void solveSocketData(QUdpSocket* socket, const QList<SocketData>& data, const QNetworkInterface& networkInterface) = 0;
+        virtual void bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface);
+        virtual void solveSocketData(QUdpSocket* socket, const QList<SocketData>& data, const QNetworkInterface& networkInterface);
 
     private:
         static QList<SocketData> receiveDataFromSocket(QUdpSocket* socket);
+    };
+
+    class UdpBroadCastStrategyBuilder {
+    public:
+        UdpBroadCastStrategyBuilder() {
+            strategy = new UdpBroadCastStrategy;
+        }
+
+        UdpBroadCastStrategyBuilder& deviceId(const QString& id) {
+            strategy->deviceId = id;
+            return *this;
+        }
+
+        UdpBroadCastStrategyBuilder& deviceName(const QString& name) {
+            strategy->deviceName = name;
+            return *this;
+        }
+
+        UdpBroadCastStrategyBuilder& bindEth() {
+            strategy->addInterfaceCheck(QRegularExpression("^eth"));
+            return *this;
+        }
+
+        UdpBroadCastStrategyBuilder& bindWifi() {
+            strategy->addInterfaceCheck(QRegularExpression("^wlan"));
+            return *this;
+        }
+
+        UdpBroadCastStrategyBuilder& bindUsb() {
+            strategy->addInterfaceCheck(QRegularExpression("^usb"));
+            return *this;
+        }
+
+        UdpBroadCastStrategyBuilder& bindInterface(const QString& reg) {
+            strategy->addInterfaceCheck(QRegularExpression(reg));
+            return *this;
+        }
+
+        UdpBroadCastStrategyBuilder& listenOn(int port) {
+            strategy->bindPort(port);
+            return *this;
+        }
+
+        UdpBroadCastStrategy* build() const {
+            return strategy;
+        }
+
+    private:
+        UdpBroadCastStrategy* strategy;
     };
 }

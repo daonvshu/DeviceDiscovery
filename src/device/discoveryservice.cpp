@@ -5,6 +5,12 @@ namespace DeviceDiscovery {
         instance().strategies.append(strategy);
     }
 
+    void DiscoveryService::setStrategiesKey(const QString& key) {
+        for (auto& strategy : instance().strategies) {
+            strategy->signKey = key;
+        }
+    }
+
     void DiscoveryService::start() {
         instance().timer->start();
     }

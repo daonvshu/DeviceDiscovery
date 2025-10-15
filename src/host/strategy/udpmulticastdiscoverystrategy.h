@@ -2,27 +2,27 @@
 
 #include <qobject.h>
 
-#include "udpdiscoverystrategy.h"
+#include "udpbroadcastdiscoverystrategy.h"
 
 namespace DeviceDiscovery {
-    class UdpMulticastDiscoveryStrategy : public UdpDiscoveryStrategy {
+    class UdpMulticastDiscoveryStrategy : public UdpBroadcastDiscoveryStrategy {
     public:
         explicit UdpMulticastDiscoveryStrategy(QObject* parent = nullptr);
 
+        void setBroadcastAddress(const QHostAddress& address);
+
     protected:
         void bindSocket(QUdpSocket* socket, const QNetworkInterface& networkInterface) override;
-        void solveSocketData(QUdpSocket* socket, const QList<SocketData>& data, const QNetworkInterface& networkInterface) override;
+        void sendRequest(const QByteArray& request) override;
+
+    private:
+        QHostAddress broadcastAddress;
     };
 
     class UdpMulticastStrategyBuilder {
     public:
         UdpMulticastStrategyBuilder() {
             strategy = new UdpMulticastDiscoveryStrategy;
-        }
-
-        UdpMulticastStrategyBuilder& key(const QString& key) {
-            strategy->signKey = key;
-            return *this;
         }
 
         UdpMulticastStrategyBuilder& bindAddress(const QString& host) {
