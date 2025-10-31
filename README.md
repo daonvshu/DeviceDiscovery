@@ -4,9 +4,11 @@
 ## 设备端配置
 
 ```c++
-#include <discoveryservice.h>
-#include <strategy/udpbroadcaststrategy.h>
-#include <strategy/udpmulticastbroadcaststrategy.h>
+#include <devicediscovery/device/discoveryservice.h>
+#include <devicediscovery/device/strategy/udpbroadcaststrategy.h>
+#include <devicediscovery/device/strategy/udpmulticastbroadcaststrategy.h>
+
+DEVICE_DISCOVERY_USE_NAMESPACE
 
 // 添加广播扫描策略
 DiscoveryService::addStrategy(
@@ -40,9 +42,11 @@ DiscoveryService::start();
 ## 管理端配置
 
 ```c++
-#include <discoverymanager.h>
-#include <strategy/udpbroadcastdiscoverystrategy.h>
-#include <strategy/udpmulticastdiscoverystrategy.h>
+#include <devicediscovery/host/discoverymanager.h>
+#include <devicediscovery/host/strategy/udpbroadcastdiscoverystrategy.h>
+#include <devicediscovery/host/strategy/udpmulticastdiscoverystrategy.h>
+
+DEVICE_DISCOVERY_USE_NAMESPACE
 
 // 添加广播扫描策略
 DiscoveryManager::addStrategy(
@@ -66,7 +70,9 @@ DiscoveryManager::setStrategiesKey("random_key");
 扫描设备
 
 ```c++
-#include <discoverymanager.h>
+#include <devicediscovery/host/discoverymanager.h>
+
+DEVICE_DISCOVERY_USE_NAMESPACE
 
 // 启动扫描，3s后停止并回调扫描结果
 DiscoveryManager::startScan(3000, [] (const QList<DeviceRecord>& records) {
