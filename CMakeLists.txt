@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.15)
 
 project(DeviceDiscovery VERSION 1.0.0)
 
-add_subdirectory(src/devicediscovery/host)
-add_subdirectory(src/devicediscovery/device)
-
 option(DeviceDiscovery_EnableTest "Enable testing" OFF)
 option(DeviceDiscovery_BUILD_STATIC "Build static libraries" ON)
+
+add_subdirectory(src/devicediscovery/host)
+add_subdirectory(src/devicediscovery/device)
 
 if (DeviceDiscovery_EnableTest)
     add_subdirectory(test)
